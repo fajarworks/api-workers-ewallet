@@ -1,5 +1,6 @@
+package dto
 
-type login sttruct {
+type Login struct {
 	Users string
-	Pass string
+	Pass  string
 }
