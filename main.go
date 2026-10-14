@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/rcontrisha/api-workers-ewallet/internal/config"
+	"github.com/rcontrisha/api-workers-ewallet/internal/router"
 )
 
 func main() {
@@ -32,5 +33,6 @@ func main() {
 	log.Println("Database is ready")
 
 	r := gin.Default()
+	router.MainRouter(r, pool)
 	r.Run(fmt.Sprintf("%s:%s", os.Getenv("HOST"), os.Getenv("PORT")))
 }
