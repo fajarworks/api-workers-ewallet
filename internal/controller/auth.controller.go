@@ -50,3 +50,32 @@ func (a *AuthController) LoginController(ctx *gin.Context) {
 		},
 	})
 }
+
+func (a *AuthController) RegisterController(ctx *gin.Context) {
+	var payload dto.LoginRequest
+
+	if e := ctx.ShouldBindWith(&payload, binding.JSON); e != nil {
+		log.Println("error", e.Error())
+		ctx.JSON(500, dto.Response{
+			Success: false,
+			Message: "Internal Server Error",
+		})
+		return
+	}
+
+	err := a.service.RegisterService(ctx.Request.Context(), payload)
+	if err != nil {
+		log.Println("Error: ", err.Error())
+		ctx.JSON(401, dto.Response{
+			Success: false,
+			Message: "Register failed.",
+			Data:    gin.H{},
+		})
+		return
+	}
+
+	ctx.JSON(201, dto.Response{
+		Success: true,
+		Message: "Register Success.",
+	})
+}

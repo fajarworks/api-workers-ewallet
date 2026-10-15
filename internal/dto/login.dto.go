@@ -6,6 +6,7 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	Id    string `json:"id"`
-	Email string `json:"email"`
+	Id     string `json:"id"`
+	Email  string `json:"email"`
+	HasPin bool   `json:"has_pin"`
 }
