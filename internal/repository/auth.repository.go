@@ -5,38 +5,85 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/rcontrisha/api-workers-ewallet/internal/model"
 )
 
-type AuthRepo struct {
-	db *pgxpool.Pool
+type DBTX interface {
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
 }
 
-func NewAuthRepo(db *pgxpool.Pool) *AuthRepo {
-	return &AuthRepo{
-		db: db,
+type AuthRepo struct {}
+
+func NewAuthRepo() *AuthRepo {
+	return &AuthRepo{}
+}
+
+func (a *AuthRepo) FindAccount(ctx context.Context, db DBTX, email string) (model.Auth, error) {
+	query := `
+		SELECT u.id, u.email, u.password, (a.pin IS NOT NULL) AS has_pin
+		FROM users u
+		LEFT JOIN account a ON a.id = u.id
+		WHERE u.email = $1`
+
+	var acc model.Auth
+	err := db.QueryRow(ctx, query, email).Scan(&acc.Id, &acc.Email, &acc.Password, &acc.HasPin)
+	if err != nil {
+		return model.Auth{}, err
 	}
+	return acc, nil
 }
 
-func (a *AuthRepo) FindAccount(ctx context.Context, email string) (model.User, error) {
-	query := "SELECT id, email, password FROM users WHERE email = $1"
+func (a *AuthRepo) CreateUser(ctx context.Context, db DBTX, payload model.User) (string, error) {
+	query := "INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id"
+	args := []any{payload.Email, payload.Password}
 
-	var user model.User
-
-	err := a.db.QueryRow(ctx, query, email).Scan(
-		&user.Id,
-		&user.Email,
-		&user.Password,
+	var newUserId string
+	err := db.QueryRow(ctx, query, args...).Scan(
+		&newUserId,
 	)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return model.User{}, err
+			return "", err
 		}
 
-		return model.User{}, err
+		return "", err
 	}
 
-	return user, nil
+	return newUserId, nil
+}
+
+func (a *AuthRepo) CreateAccount(ctx context.Context, db DBTX, userId string) error {
+	query := "INSERT INTO account (id) VALUES ($1)"
+
+	cmd, err := db.Exec(ctx, query, userId)
+
+	if err != nil {
+		return err
+	}
+
+	if cmd.RowsAffected() == 0 {
+		return errors.New("No Row(s) Affected")
+	}
+
+	return nil
+}
+
+func (a *AuthRepo) CreateWallet(ctx context.Context, db DBTX, userId string) error {
+	query := "INSERT INTO wallet (id) VALUES ($1)"
+
+	cmd, err := db.Exec(ctx, query, userId)
+
+	if err != nil {
+		return err
+	}
+
+	if cmd.RowsAffected() == 0 {
+		return errors.New("No Row(s) Affected")
+	}
+
+	return nil
 }

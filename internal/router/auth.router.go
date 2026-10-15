@@ -11,9 +11,10 @@ import (
 func AuthRouter(r *gin.Engine, db *pgxpool.Pool) {
 	authRouter := r.Group("auth")
 
-	repo := repository.NewAuthRepo(db)
-	service := service.NewAuthService(repo)
+	repo := repository.NewAuthRepo()
+	service := service.NewAuthService(repo, db)
 	controller := controller.NewAuthController(service)
 
 	authRouter.POST("login", controller.LoginController)
+	authRouter.POST("register", controller.RegisterController)
 }
