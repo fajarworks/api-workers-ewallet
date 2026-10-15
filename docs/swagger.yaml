@@ -1,0 +1,15 @@
+basePath: /
+host: localhost:8080
+info:
+  contact: {}
+  description: Digital wallet for simplifying transfer and track your money
+  title: The Workers E-wallet
+  version: "1.0"
+paths: {}
+securityDefinitions:
+  BearerAuth:
+    description: Bearer token used as identiity for accessing backend
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
