@@ -12,6 +12,15 @@ import (
 	"github.com/rcontrisha/api-workers-ewallet/internal/router"
 )
 
+// @title           						The Workers E-wallet
+// @version         						1.0
+// @description     						Digital wallet for simplifying transfer and track your money
+// @host      									localhost:8080
+// @BasePath  									/
+// @securityDefinitions.apikey 	BearerAuth
+// @in 													header
+// @name 												Authorization
+// @description 								Bearer token used as identiity for accessing backend
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -31,6 +40,18 @@ func main() {
 		return
 	}
 	log.Println("Database is ready")
+
+	rc := config.NewRedisClient(os.Getenv("REDIS_USERNAME"), os.Getenv("REDIS_PASSWORD"), os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT"))
+	rdb := rc.Connect()
+	defer rdb.Close()
+	status, err := rdb.Ping(context.Background()).Result()
+
+	if err != nil {
+		fmt.Println("[failed to connect redis]:", err)
+	}
+	fmt.Println(status)
+
+	fmt.Println("connected to redis")
 
 	r := gin.Default()
 	router.MainRouter(r, pool)
