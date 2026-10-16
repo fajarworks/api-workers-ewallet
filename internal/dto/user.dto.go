@@ -1,6 +1,9 @@
 package dto
 
-import "mime/multipart"
+import (
+	"mime/multipart"
+	"time"
+)
 
 type UserUpdateRequest struct {
 	Id        string                `form:"id"`
@@ -16,4 +19,14 @@ type UserUpdateResponse struct {
 	Phone     string  `json:"phone"`
 	Email     string  `json:"email"`
 	AvatarUrl *string `json:"avatar_url"`
+}
+
+type UserResponse struct {
+	ID        string     `json:"id"`
+	Fullname  *string    `json:"fullName"`
+	Phone     *string    `json:"phone"`
+	Avatar    *string    `json:"avatar"`
+	Email     string     `json:"email"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdateAt  *time.Time `json:"updated_at"`
 }

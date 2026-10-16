@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	"github.com/jackc/pgx/v5"
 	"github.com/rcontrisha/api-workers-ewallet/internal/dto"
 	"github.com/rcontrisha/api-workers-ewallet/internal/service"
 	"github.com/rcontrisha/api-workers-ewallet/pkg"
@@ -136,5 +138,58 @@ func (u *UserController) UpdateUserProfile(ctx *gin.Context) {
 		Success: true,
 		Message: "profile updated successfully",
 		Data:    account,
+	})
+}
+
+// GetProfile godoc
+// @Summary Get user profile
+// @Description Returns profile information for the authenticated user.
+// @Tags Users
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} dto.Response "Profile retrieved successfully"
+// @Failure 401 {object} dto.Response "Missing or invalid bearer token"
+// @Failure 404 {object} dto.Response "Profile not found"
+// @Failure 500 {object} dto.Response "Internal server error"
+// @Router /users/profile [get]
+func (u *UserController) GetProfile(ctx *gin.Context) {
+	claims, exists := ctx.Get("token")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"message": "please login first",
+		})
+		return
+	}
+	token, ok := claims.(pkg.JWTClaims)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"message": "invalid bearer token",
+		})
+		return
+	}
+	profile, err := u.service.GetProfileService(ctx.Request.Context(), token.Id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"success": false,
+				"message": "Profile not found.",
+			})
+			return
+		}
+		log.Println("error", err.Error())
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Internal Server Error",
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Get profile success.",
+		"data": gin.H{
+			"profile": profile,
+		},
 	})
 }

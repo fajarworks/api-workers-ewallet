@@ -16,3 +16,13 @@ type Auth struct {
 	Password string `db:"password"`
 	HasPin   bool   `db:"has_pin"`
 }
+
+type UserResponse struct {
+	ID        string     `db:"id"`
+	Fullname  *string    `db:"fullname"`
+	Phone     *string    `db:"phone"`
+	Avatar    *string    `db:"avatar"`
+	Email     string     `db:"email"`
+	CreatedAt time.Time  `db:"created_at"`
+	UpdatedAt *time.Time `db:"updated_at"`
+}
