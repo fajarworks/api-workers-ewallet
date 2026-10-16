@@ -10,6 +10,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rcontrisha/api-workers-ewallet/internal/config"
 	"github.com/rcontrisha/api-workers-ewallet/internal/router"
+	"github.com/rcontrisha/api-workers-ewallet/pkg"
 )
 
 // @title           						The Workers E-wallet
@@ -41,7 +42,7 @@ func main() {
 	}
 	log.Println("Database is ready")
 
-	rc := config.NewRedisClient(os.Getenv("REDIS_USERNAME"), os.Getenv("REDIS_PASSWORD"), os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT"))
+	rc := config.NewRedisClient(os.Getenv("REDIS_USER"), os.Getenv("REDIS_PASSWORD"), os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT"))
 	rdb := rc.Connect()
 	defer rdb.Close()
 	status, err := rdb.Ping(context.Background()).Result()
@@ -53,7 +54,19 @@ func main() {
 
 	fmt.Println("connected to redis")
 
+	mailCfg := config.LoadMailConfig()
+	mailClient, err := pkg.NewMailer(
+		mailCfg.Host,
+		mailCfg.Port,
+		mailCfg.Username,
+		mailCfg.Password,
+		mailCfg.SenderEmail,
+	)
+	if err != nil {
+		log.Fatalf("failed to initialize mailer: %v", err)
+	}
+
 	r := gin.Default()
-	router.MainRouter(r, pool, rdb)
+	router.MainRouter(r, pool, rdb, mailClient)
 	r.Run(fmt.Sprintf("%s:%s", os.Getenv("HOST"), os.Getenv("PORT")))
 }

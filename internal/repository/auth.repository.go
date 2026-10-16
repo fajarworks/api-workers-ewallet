@@ -3,10 +3,13 @@ package repository
 import (
 	"context"
 	"errors"
+	"os"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/rcontrisha/api-workers-ewallet/internal/model"
+	"github.com/redis/go-redis/v9"
 )
 
 type DBTX interface {
@@ -15,10 +18,14 @@ type DBTX interface {
 	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
 }
 
-type AuthRepo struct {}
+type AuthRepo struct {
+	rdb *redis.Client
+}
 
-func NewAuthRepo() *AuthRepo {
-	return &AuthRepo{}
+func NewAuthRepo(rdb *redis.Client) *AuthRepo {
+	return &AuthRepo{
+		rdb: rdb,
+	}
 }
 
 func (a *AuthRepo) FindAccount(ctx context.Context, db DBTX, email string) (model.Auth, error) {
@@ -83,6 +90,35 @@ func (a *AuthRepo) CreateWallet(ctx context.Context, db DBTX, userId string) err
 
 	if cmd.RowsAffected() == 0 {
 		return errors.New("No Row(s) Affected")
+	}
+
+	return nil
+}
+
+func (a *AuthRepo) SetResetToken(ctx context.Context, hashedToken string, userID string, ttl time.Duration) error {
+	key := os.Getenv("REDIS_USER") + ":reset_password:" + hashedToken
+	return a.rdb.Set(ctx, key, userID, ttl).Err()
+}
+
+func (a *AuthRepo) GetResetToken(ctx context.Context, hashedToken string) (string, error) {
+	key := os.Getenv("REDIS_USER") + ":reset_password:" + hashedToken
+	return a.rdb.Get(ctx, key).Result()
+}
+
+func (a *AuthRepo) DeleteResetToken(ctx context.Context, hashedToken string) error {
+	key := os.Getenv("REDIS_USER") + ":reset_password:" + hashedToken
+	return a.rdb.Del(ctx, key).Err()
+}
+
+func (a *AuthRepo) UpdatePassword(ctx context.Context, db DBTX, userID string, newHashedPassword string) error {
+	query := "UPDATE users SET password = $1 WHERE id = $2"
+	cmd, err := db.Exec(ctx, query, newHashedPassword, userID)
+	if err != nil {
+		return err
+	}
+
+	if cmd.RowsAffected() == 0 {
+		return errors.New("User not found or password not updated")
 	}
 
 	return nil
