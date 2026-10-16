@@ -61,3 +61,19 @@ func (u *UserService) UpdateProfileInfo(ctx context.Context, userId, email strin
 	return profile, nil
 
 }
+
+func (s *UserService) GetProfileService(ctx context.Context, userID string) (dto.UserResponse, error) {
+	user, err := s.repo.GetProfile(ctx, s.db, userID)
+	if err != nil {
+		return dto.UserResponse{}, err
+	}
+	return dto.UserResponse{
+		ID:        user.ID,
+		Fullname:  user.Fullname,
+		Phone:     user.Phone,
+		Avatar:    user.Avatar,
+		Email:     user.Email,
+		CreatedAt: user.CreatedAt,
+		UpdateAt:  user.UpdatedAt,
+	}, nil
+}

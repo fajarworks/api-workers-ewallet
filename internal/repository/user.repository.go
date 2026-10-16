@@ -48,3 +48,25 @@ func (u *UserRepo) UpdateUserEmail(ctx context.Context, email, userId string, db
 	}
 	return userEmail, nil
 }
+
+func (u *UserRepo) GetProfile(ctx context.Context, db DBTX, userID string) (model.UserResponse, error) {
+	query := `
+		SELECT u.id, a.fullname, a.phone, a.avatar, u.email, a.created_at, a.updated_at
+		FROM users u
+		JOIN account a ON a.id = u.id
+		WHERE u.id = $1`
+	var user model.UserResponse
+	err := db.QueryRow(ctx, query, userID).Scan(
+		&user.ID,
+		&user.Fullname,
+		&user.Phone,
+		&user.Avatar,
+		&user.Email,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+	if err != nil {
+		return model.UserResponse{}, err
+	}
+	return user, nil
+}
