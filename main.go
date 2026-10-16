@@ -10,6 +10,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rcontrisha/api-workers-ewallet/internal/config"
 	"github.com/rcontrisha/api-workers-ewallet/internal/router"
+	"github.com/rcontrisha/api-workers-ewallet/pkg"
 )
 
 // @title           						The Workers E-wallet
@@ -53,7 +54,19 @@ func main() {
 
 	fmt.Println("connected to redis")
 
+	mailCfg := config.LoadMailConfig()
+	mailClient, err := pkg.NewMailer(
+		mailCfg.Host,
+		mailCfg.Port,
+		mailCfg.Username,
+		mailCfg.Password,
+		mailCfg.SenderEmail,
+	)
+	if err != nil {
+		log.Fatalf("failed to initialize mailer: %v", err)
+	}
+
 	r := gin.Default()
-	router.MainRouter(r, pool)
+	router.MainRouter(r, pool, mailClient)
 	r.Run(fmt.Sprintf("%s:%s", os.Getenv("HOST"), os.Getenv("PORT")))
 }

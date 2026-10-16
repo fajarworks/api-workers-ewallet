@@ -87,3 +87,4 @@ func (a *AuthRepo) CreateWallet(ctx context.Context, db DBTX, userId string) err
 
 	return nil
 }
+

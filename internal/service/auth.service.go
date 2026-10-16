@@ -14,14 +14,16 @@ import (
 )
 
 type AuthService struct {
-	repo *repository.AuthRepo
-	db   *pgxpool.Pool
+	repo   *repository.AuthRepo
+	db     *pgxpool.Pool
+	mailer *pkg.Mailer
 }
 
-func NewAuthService(repo *repository.AuthRepo, db *pgxpool.Pool) *AuthService {
+func NewAuthService(repo *repository.AuthRepo, db *pgxpool.Pool, mailer *pkg.Mailer) *AuthService {
 	return &AuthService{
-		repo: repo,
-		db:   db,
+		repo:   repo,
+		db:     db,
+		mailer: mailer,
 	}
 }
 
