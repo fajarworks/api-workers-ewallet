@@ -3,7 +3,10 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
+	"os"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -11,6 +14,7 @@ import (
 	"github.com/rcontrisha/api-workers-ewallet/internal/model"
 	"github.com/rcontrisha/api-workers-ewallet/internal/repository"
 	"github.com/rcontrisha/api-workers-ewallet/pkg"
+	"github.com/redis/go-redis/v9"
 )
 
 type AuthService struct {
@@ -96,6 +100,69 @@ func (a *AuthService) RegisterService(ctx context.Context, payload dto.LoginRequ
 
 	if err := tx.Commit(ctx); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (a *AuthService) ForgotPasswordService(ctx context.Context, email string) error {
+	acc, err := a.repo.FindAccount(ctx, a.db, email)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			// Tetap return nil tanpa error biar nggak kena user enumeration attack
+			return nil
+		}
+		return err
+	}
+
+	rawToken, err := pkg.GenerateRandomToken(32)
+	if err != nil {
+		return err
+	}
+
+	hashedToken := pkg.HashToken(rawToken)
+
+	if err := a.repo.SetResetToken(ctx, hashedToken, acc.Id, 5*time.Minute); err != nil {
+		return err
+	}
+
+	go func(toEmail, token string) {
+		resetLink := fmt.Sprintf("http://%s:%s/reset-password?token=%s", os.Getenv("HOST"), os.Getenv("PORT"), token)
+		bodyHTML := fmt.Sprintf(`
+			<h3>Reset Password Request</h3>
+			<p>Silakan klik link di bawah ini untuk mereset password kamu:</p>
+			<p><a href="%s">%s</a></p>
+			<p>Link ini berlaku selama 5 menit.</p>
+		`, resetLink, resetLink)
+
+		if err := a.mailer.Send(toEmail, "Reset Password Request", bodyHTML); err != nil {
+			log.Println("[ForgotPasswordMailer]-Error: ", err)
+		}
+	}(acc.Email, rawToken)
+
+	return nil
+}
+
+func (a *AuthService) ResetPasswordService(ctx context.Context, rawToken string, newPassword string) error {
+	hashedToken := pkg.HashToken(rawToken)
+
+	userID, err := a.repo.GetResetToken(ctx, hashedToken)
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return errors.New("Token reset password tidak valid atau sudah kadaluarsa.")
+		}
+		return err
+	}
+
+	hashedPwd := pkg.NewRecommendedHashConfig().GenHash(newPassword)
+
+	if err := a.repo.UpdatePassword(ctx, a.db, userID, hashedPwd); err != nil {
+		return err
+	}
+
+	// Langsung hapus key dari Redis setelah password berhasil diperbarui
+	if err := a.repo.DeleteResetToken(ctx, hashedToken); err != nil {
+		log.Println("[DeleteResetToken]-Error: ", err)
 	}
 
 	return nil

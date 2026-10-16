@@ -79,3 +79,52 @@ func (a *AuthController) RegisterController(ctx *gin.Context) {
 		Message: "Register Success.",
 	})
 }
+
+func (a *AuthController) ForgotPassword(c *gin.Context) {
+	var payload dto.ForgotPasswordRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(400, dto.Response{
+			Message: "Invalid email format",
+			Data:    nil,
+		})
+		return
+	}
+
+	if err := a.service.ForgotPasswordService(c.Request.Context(), payload.Email); err != nil {
+		c.JSON(500, dto.Response{
+			Message: "Failed to process forgot password request",
+			Data:    nil,
+		})
+		return
+	}
+
+	c.JSON(200, dto.Response{
+		Success: true,
+		Message: "We have sent password reset instructions to your email.",
+		Data:    nil,
+	})
+}
+
+func (a *AuthController) ResetPassword(c *gin.Context) {
+	var payload dto.ResetPasswordRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(400, dto.Response{
+			Message: "Invalid input request. Password must be at least 8 characters.",
+			Data:    nil,
+		})
+		return
+	}
+
+	if err := a.service.ResetPasswordService(c.Request.Context(), payload.Token, payload.NewPassword); err != nil {
+		c.JSON(400, dto.Response{
+			Message: err.Error(),
+			Data:    nil,
+		})
+		return
+	}
+
+	c.JSON(200, dto.Response{
+		Message: "Password has been successfully reset. Please login with your new password.",
+		Data:    nil,
+	})
+}
