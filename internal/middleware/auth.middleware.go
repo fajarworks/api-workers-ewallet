@@ -42,7 +42,7 @@ func AuthMiddleware(rdb *redis.Client) gin.HandlerFunc {
 		if err := token.DecodeToken(res[1]); err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.Response{
 				Success: false,
-				Message: "terjadi kesalahan server",
+				Message: "an server error occured",
 			})
 			return
 		}
