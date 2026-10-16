@@ -14,4 +14,5 @@ func MainRouter(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client, mailer 
 	router.GET("swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	AuthRouter(router, db, rdb, mailer)
+	UserRouter(router, db, rdb)
 }

@@ -1,11 +1,49 @@
 basePath: /
+definitions:
+  dto.Response:
+    properties:
+      data:
+        additionalProperties: true
+        type: object
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
 host: localhost:8080
 info:
   contact: {}
   description: Digital wallet for simplifying transfer and track your money
   title: The Workers E-wallet
   version: "1.0"
-paths: {}
+paths:
+  /Account:
+    get:
+      description: Returns profile information for the authenticated account.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile retrieved successfully
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "401":
+          description: Missing or invalid bearer token
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "404":
+          description: Profile not found
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.Response'
+      security:
+      - BearerAuth: []
+      summary: Get profile
+      tags:
+      - Account
 securityDefinitions:
   BearerAuth:
     description: Bearer token used as identiity for accessing backend
