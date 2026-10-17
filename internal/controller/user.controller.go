@@ -325,3 +325,29 @@ func (u *UserController) SetPIN(ctx *gin.Context) {
 		Data:    nil,
 	})
 }
+
+func (u *UserController) UserSummaryDashboard(ctx *gin.Context) {
+	token, exist := ctx.Get("token")
+	if !exist {
+		ctx.JSON(http.StatusUnauthorized, dto.Response{
+			Success: false,
+			Message: "unauthorized",
+		})
+		return
+	}
+	claims := token.(pkg.JWTClaims)
+	userId := claims.Id
+	data, err := u.service.UserDashboardSummary(ctx, userId)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, dto.Response{
+			Success: false,
+			Message: "an error server occured",
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, dto.Response{
+		Success: true,
+		Message: "dashboard user",
+		Data:    data,
+	})
+}

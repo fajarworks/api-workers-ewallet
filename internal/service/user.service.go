@@ -125,3 +125,18 @@ func (s *UserService) SetPINService(ctx context.Context, userID string, payload 
 
 	return nil
 }
+
+func (s *UserService) UserDashboardSummary(ctx context.Context, userId string) (dto.DashboardSummaryResponse, error) {
+	data, err := s.repo.UserSummaryDashboard(ctx, userId, s.db)
+	if err != nil {
+		return dto.DashboardSummaryResponse{}, nil
+	}
+
+	payload := dto.DashboardSummaryResponse{
+		Balance: data.Balance,
+		Income:  data.Income,
+		Expense: data.Expense,
+	}
+	return payload, nil
+
+}

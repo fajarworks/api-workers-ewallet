@@ -132,3 +132,20 @@ func (u *UserRepo) SetUserPIN(ctx context.Context, db DBTX, userID string, hashe
 	}
 	return nil
 }
+
+func (u *UserRepo) UserSummaryDashboard(ctx context.Context, userId string, db DBTX) (model.DashboardSummary, error) {
+	query := `SELECT 
+				w.balance, 
+				COALESCE(SUM(t.total) FILTER(WHERE t.sender_wallet_id = w.id),0) AS expense, 
+				COALESCE(SUM(t.amount) FILTER (WHERE t.receiver_wallet_id = w.id),0) AS income
+				FROM wallet w
+				LEFT JOIN transaction t ON (t.sender_wallet_id = w.id OR t.receiver_wallet_id = w.id) AND t.status = 'success'
+				WHERE w.id = $1
+				GROUP BY w.id, w.balance`
+
+	var data model.DashboardSummary
+	if err := db.QueryRow(ctx, query, userId).Scan(&data.Balance, &data.Expense, &data.Income); err != nil {
+		return model.DashboardSummary{}, err
+	}
+	return data, nil
+}
