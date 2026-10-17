@@ -10,8 +10,8 @@ import (
 )
 
 type JWTClaims struct {
-	Id        string  `json:"id"`
-	Email     string  `json:"email"`
+	Id    string `json:"id"`
+	Email string `json:"email"`
 	jwt.RegisteredClaims
 }
 
@@ -19,9 +19,9 @@ func NewJWTClaims(id, email string) *JWTClaims {
 	return &JWTClaims{
 		Id:        id,
 		Email:     email,
-		ID: uuid.New().String(),
+		ID:        uuid.New().String(),
 		Issuer:    os.Getenv("JWT_ISSUER"),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 5)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 60)),
 	}
 }
 

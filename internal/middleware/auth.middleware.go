@@ -1,7 +1,10 @@
 package middleware
 
 import (
+	"errors"
+	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -46,6 +49,28 @@ func AuthMiddleware(rdb *redis.Client) gin.HandlerFunc {
 			})
 			return
 		}
+
+		blacklistKey := os.Getenv("REDIS_USER") + ":blacklist:" + token.ID
+		exists, err := rdb.Exists(ctx, blacklistKey).Result()
+		if err != nil && !errors.Is(err, redis.Nil) {
+			log.Println(err)
+			ctx.AbortWithStatusJSON(500, dto.Response{
+				Success: false,
+				Message: "Internal server error while checking token validity",
+				Data:    nil,
+			})
+			return
+		}
+
+		if exists > 0 {
+			ctx.AbortWithStatusJSON(401, dto.Response{
+				Success: false,
+				Message: "Token has been revoked or logged out",
+				Data:    nil,
+			})
+			return
+		}
+
 		ctx.Set("token", token)
 		ctx.Next()
 	}
