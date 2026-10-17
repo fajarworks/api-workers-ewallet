@@ -23,6 +23,7 @@ type UserResponse struct {
 	Phone     *string    `db:"phone"`
 	Avatar    *string    `db:"avatar"`
 	Email     string     `db:"email"`
+	Pin *string `db:"pin"`
 	CreatedAt time.Time  `db:"created_at"`
 	UpdatedAt *time.Time `db:"updated_at"`
 }

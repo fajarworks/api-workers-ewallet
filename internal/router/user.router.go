@@ -15,8 +15,10 @@ func UserRouter(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 	userRepo := repository.NewUserRepo()
 	userService := service.NewUserService(userRepo, db)
 	userController := controller.NewUserController(userService)
+
 	userRouter.PATCH("update", middleware.AuthMiddleware(rdb), userController.UpdateUserProfile)
 	userRouter.GET("profile", middleware.AuthMiddleware(rdb), userController.GetProfile)
 	userRouter.PATCH("change-password", middleware.AuthMiddleware(rdb), userController.ChangePassword)
 	userRouter.PATCH("change-pin", middleware.AuthMiddleware(rdb), userController.ChangePinUser)
+	userRouter.POST("pin", middleware.AuthMiddleware(rdb), userController.SetPIN)
 }
