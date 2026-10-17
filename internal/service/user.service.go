@@ -140,3 +140,20 @@ func (s *UserService) UserDashboardSummary(ctx context.Context, userId string) (
 	return payload, nil
 
 }
+
+func (s *UserService) UserDashboardHistoryTransaction(ctx context.Context, userId string) ([]dto.HistoryTransactionResponse, error) {
+	data, err := s.repo.UserHistoryTransaction(ctx, userId, s.db)
+	if err != nil {
+		return nil, err
+	}
+	histories := make([]dto.HistoryTransactionResponse, 0)
+	for _, v := range data {
+		histories = append(histories, dto.HistoryTransactionResponse{
+			Name:   v.Name,
+			Avatar: v.Avatar,
+			Type:   v.Type,
+			Amount: v.Amount,
+		})
+	}
+	return histories, nil
+}

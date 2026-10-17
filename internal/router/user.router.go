@@ -22,4 +22,5 @@ func UserRouter(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 	userRouter.PATCH("change-pin", middleware.AuthMiddleware(rdb), userController.ChangePinUser)
 	userRouter.POST("pin", middleware.AuthMiddleware(rdb), userController.SetPIN)
 	userRouter.GET("dashboard-summary", middleware.AuthMiddleware(rdb), userController.UserSummaryDashboard)
+	userRouter.GET("dashboard-history", middleware.AuthMiddleware(rdb), userController.DashboardHistoryTransaction)
 }
