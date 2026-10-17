@@ -10,9 +10,10 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func MainRouter(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client, mailer *pkg.Mailer) {
+func MainRouter(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client, mailer *pkg.Mailer, dokuClient *pkg.DokuClient) {
 	router.GET("swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	AuthRouter(router, db, rdb, mailer)
 	UserRouter(router, db, rdb)
+	PaymentRouter(router, db, rdb, dokuClient)
 }

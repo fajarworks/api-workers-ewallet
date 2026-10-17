@@ -1,0 +1,147 @@
+package service
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"os"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/rcontrisha/api-workers-ewallet/internal/dto"
+	"github.com/rcontrisha/api-workers-ewallet/internal/model"
+	"github.com/rcontrisha/api-workers-ewallet/internal/repository"
+	"github.com/rcontrisha/api-workers-ewallet/pkg"
+)
+
+type PaymentService struct {
+	repo       *repository.PaymentRepo
+	userRepo   *repository.UserRepo
+	db         *pgxpool.Pool
+	dokuClient *pkg.DokuClient
+}
+
+func NewPaymentService(repo *repository.PaymentRepo, userRepo *repository.UserRepo, db *pgxpool.Pool, dokuClient *pkg.DokuClient) *PaymentService {
+	return &PaymentService{
+		repo:       repo,
+		userRepo:   userRepo,
+		db:         db,
+		dokuClient: dokuClient,
+	}
+}
+
+func (s *PaymentService) CreateTopupService(ctx context.Context, userID string, payload dto.CreateTopupRequest) (dto.CreateTopupResponse, error) {
+	account, err := s.userRepo.GetProfile(ctx, s.db, userID)
+	if err != nil {
+		return dto.CreateTopupResponse{}, fmt.Errorf("user account not found: %w", err)
+	}
+
+	var paymentChannels []string
+	if payload.PaymentMethodID != nil && *payload.PaymentMethodID != "" {
+		pm, err := s.repo.GetPaymentMethodByID(ctx, s.db, *payload.PaymentMethodID)
+		if err == nil && pm.IsActive {
+			paymentChannels = append(paymentChannels, pm.GatewayPaymentChannel)
+		}
+	}
+
+	trxCode := fmt.Sprintf("TOPUP-%d", time.Now().UnixNano()/1e6)
+
+	txModel := model.Transaction{
+		TrxCode:          trxCode,
+		Type:             "TOPUP",
+		Status:           "PENDING",
+		Amount:           payload.Amount,
+		Tax:              0,
+		Discount:         0,
+		Total:            payload.Amount,
+		SenderWalletID:   nil,
+		ReceiverWalletID: userID,
+		PaymentMethodID:  payload.PaymentMethodID,
+		Note:             payload.Note,
+	}
+
+	createdTrx, err := s.repo.CreateTransaction(ctx, s.db, txModel)
+	if err != nil {
+		return dto.CreateTopupResponse{}, fmt.Errorf("failed to create transaction: %w", err)
+	}
+
+	dokuPayload := pkg.DokuCheckoutPayload{}
+	dokuPayload.Order.Amount = payload.Amount
+	dokuPayload.Order.InvoiceNumber = trxCode
+	dokuPayload.Order.Currency = "IDR"
+	dokuPayload.Order.AutoRedirect = true
+	dokuPayload.Order.CallbackURL = os.Getenv("DOKU_CALLBACK_URL")
+
+	dokuPayload.Payment.PaymentDueDate = 60
+	if len(paymentChannels) > 0 {
+		dokuPayload.Payment.PaymentMethodTypes = paymentChannels
+	}
+
+	fullName := "Customer"
+	if account.Fullname != nil {
+		fullName = *account.Fullname
+	}
+	phone := "081234567890"
+	if account.Phone != nil {
+		phone = *account.Phone
+	}
+
+	dokuPayload.Customer.ID = userID
+	dokuPayload.Customer.Name = fullName
+	dokuPayload.Customer.Email = account.Email
+	dokuPayload.Customer.Phone = phone
+
+	dokuResp, err := s.dokuClient.CreateCheckout(ctx, dokuPayload)
+	if err != nil {
+		log.Println("[DokuCheckout]-Error: ", err)
+		return dto.CreateTopupResponse{}, fmt.Errorf("failed to generate payment checkout: %w", err)
+	}
+
+	return dto.CreateTopupResponse{
+		TrxCode:    createdTrx.TrxCode,
+		Amount:     createdTrx.Amount,
+		Total:      createdTrx.Total,
+		Status:     createdTrx.Status,
+		PaymentURL: dokuResp.Response.Payment.URL,
+	}, nil
+}
+
+func (s *PaymentService) ProcessDokuNotificationService(ctx context.Context, payload dto.DokuNotificationPayload) error {
+	trx, err := s.repo.FindTransactionByTrxCode(ctx, s.db, payload.Order.InvoiceNumber)
+	if err != nil {
+		return fmt.Errorf("transaction not found: %w", err)
+	}
+
+	// Idempotency check: jika status transaksi sudah bukan PENDING, abaikan request duplikat
+	if trx.Status != "PENDING" {
+		log.Printf("[DokuNotification] Invoice %s already processed with status %s", trx.TrxCode, trx.Status)
+		return nil
+	}
+
+	if payload.Transaction.Status == "SUCCESS" {
+		tx, err := s.db.Begin(ctx)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			_ = tx.Rollback(ctx)
+		}()
+
+		if err := s.repo.UpdateTransactionStatus(ctx, tx, trx.TrxCode, "SUCCESS"); err != nil {
+			return err
+		}
+
+		if err := s.repo.AddWalletBalance(ctx, tx, trx.ReceiverWalletID, trx.Amount); err != nil {
+			return err
+		}
+
+		if err := tx.Commit(ctx); err != nil {
+			return err
+		}
+
+		log.Printf("[DokuNotification] Success Topup Invoice %s amount %d for wallet %s", trx.TrxCode, trx.Amount, trx.ReceiverWalletID)
+		return nil
+	}
+
+	return s.repo.UpdateTransactionStatus(ctx, s.db, trx.TrxCode, "FAILED")
+}
