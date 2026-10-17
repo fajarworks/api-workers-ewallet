@@ -2,7 +2,9 @@ package repository
 
 import (
 	"context"
+	"log"
 
+	msgerror "github.com/rcontrisha/api-workers-ewallet/internal/error"
 	"github.com/rcontrisha/api-workers-ewallet/internal/model"
 )
 
@@ -69,4 +71,34 @@ func (u *UserRepo) GetProfile(ctx context.Context, db DBTX, userID string) (mode
 		return model.UserResponse{}, err
 	}
 	return user, nil
+}
+
+func (u *UserRepo) ChangePassword(ctx context.Context, userId string, password string, db DBTX) error {
+	sql := `
+        UPDATE users
+        SET password = $1
+        WHERE id = $2
+    `
+
+	tag, err := db.Exec(ctx, sql, password, userId)
+	if err != nil {
+		log.Println("[Repo.ChangePassword] err:", err)
+		return err
+	}
+
+	if tag.RowsAffected() == 0 {
+		return msgerror.ErrNoRows
+	}
+
+	return nil
+}
+
+func (u *UserRepo) GetUserPassword(ctx context.Context, userId string, db DBTX) (string, error) {
+	sql := `SELECT password FROM users WHERE id = $1`
+	var userPass string
+	if err := db.QueryRow(ctx, sql, userId).Scan(&userPass); err != nil {
+		return "", err
+	}
+	return userPass, nil
+
 }

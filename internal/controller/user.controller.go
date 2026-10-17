@@ -14,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/jackc/pgx/v5"
 	"github.com/rcontrisha/api-workers-ewallet/internal/dto"
+	msgerror "github.com/rcontrisha/api-workers-ewallet/internal/error"
 	"github.com/rcontrisha/api-workers-ewallet/internal/service"
 	"github.com/rcontrisha/api-workers-ewallet/pkg"
 )
@@ -191,5 +192,51 @@ func (u *UserController) GetProfile(ctx *gin.Context) {
 		"data": gin.H{
 			"profile": profile,
 		},
+	})
+}
+
+func (u *UserController) ChangePassword(ctx *gin.Context) {
+	token, exist := ctx.Get("token")
+	if !exist {
+		ctx.JSON(http.StatusUnauthorized, dto.Response{
+			Success: false,
+			Message: "token doesn't exist",
+		})
+		return
+	}
+	claims, ok := token.(pkg.JWTClaims)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, dto.Response{
+			Success: false,
+			Message: "invalid token",
+		})
+		return
+	}
+	userId := claims.Id
+
+	var body dto.UserChangePassword
+
+	if err := ctx.ShouldBindWith(&body, binding.JSON); err != nil {
+		log.Println("[change password] err:", err.Error())
+		ctx.JSON(http.StatusBadRequest, dto.Response{
+			Success: false,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	if err := u.service.ChangePassword(ctx.Request.Context(), userId, body); err != nil {
+		log.Println("[change password] err:", err.Error())
+		if errors.Is(err, msgerror.ErrWrongPass) {
+			ctx.JSON(http.StatusBadRequest, dto.Response{
+				Success: false,
+				Message: "wrong old password",
+			})
+			return
+		}
+	}
+	ctx.JSON(http.StatusOK, dto.Response{
+		Success: true,
+		Message: "change password success",
 	})
 }

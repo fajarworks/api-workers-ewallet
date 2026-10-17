@@ -5,8 +5,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rcontrisha/api-workers-ewallet/internal/dto"
+	msgerror "github.com/rcontrisha/api-workers-ewallet/internal/error"
 	"github.com/rcontrisha/api-workers-ewallet/internal/model"
 	"github.com/rcontrisha/api-workers-ewallet/internal/repository"
+	"github.com/rcontrisha/api-workers-ewallet/pkg"
 )
 
 type UserService struct {
@@ -76,4 +78,19 @@ func (s *UserService) GetProfileService(ctx context.Context, userID string) (dto
 		CreatedAt: user.CreatedAt,
 		UpdateAt:  user.UpdatedAt,
 	}, nil
+}
+
+func (u *UserService) ChangePassword(ctx context.Context, userId string, payload dto.UserChangePassword) error {
+	pass, err := u.repo.GetUserPassword(ctx, userId, u.db)
+	if err != nil {
+		return err
+	}
+	if err := pkg.Compare(payload.OldPassword, pass); err != nil {
+		return msgerror.ErrWrongPass
+	}
+
+	hashConf := pkg.NewRecommendedHashConfig()
+	newPass := hashConf.GenHash(payload.NewPassword)
+
+	return u.repo.ChangePassword(ctx, userId, newPass, u.db)
 }

@@ -30,3 +30,7 @@ type UserResponse struct {
 	CreatedAt time.Time  `json:"created_at"`
 	UpdateAt  *time.Time `json:"updated_at"`
 }
+type UserChangePassword struct {
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
+}
