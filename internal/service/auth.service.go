@@ -127,7 +127,7 @@ func (a *AuthService) ForgotPasswordService(ctx context.Context, email string) e
 	}
 
 	go func(toEmail, token string) {
-		resetLink := fmt.Sprintf("http://%s:%s/reset-password?token=%s", os.Getenv("HOST"), os.Getenv("PORT"), token)
+		resetLink := fmt.Sprintf("%s/auth/forgot-password?token=%s", os.Getenv("FE_URL"), token)
 		bodyHTML := fmt.Sprintf(`
 			<h3>Reset Password Request</h3>
 			<p>Silakan klik link di bawah ini untuk mereset password kamu:</p>
@@ -166,4 +166,13 @@ func (a *AuthService) ResetPasswordService(ctx context.Context, rawToken string,
 	}
 
 	return nil
+}
+
+func (a *AuthService) Logout(ctx context.Context, jti string, expiresAt time.Time) error {
+	ttl := time.Until(expiresAt)
+	if ttl <= 0 {
+		return nil
+	}
+
+	return a.repo.BlacklistToken(ctx, jti, ttl)
 }

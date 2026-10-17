@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/rcontrisha/api-workers-ewallet/internal/dto"
 	"github.com/rcontrisha/api-workers-ewallet/internal/service"
+	"github.com/rcontrisha/api-workers-ewallet/pkg"
 )
 
 type AuthController struct {
@@ -126,5 +127,32 @@ func (a *AuthController) ResetPassword(c *gin.Context) {
 	c.JSON(200, dto.Response{
 		Message: "Password has been successfully reset. Please login with your new password.",
 		Data:    nil,
+	})
+}
+
+func (a *AuthController) Logout(ctx *gin.Context) {
+	token, exist := ctx.Get("token")
+	if !exist {
+		ctx.JSON(401, dto.Response{
+			Success:  false,
+			Message: "Token Data Not Found in Context.",
+		})
+	}
+
+	claims := token.(pkg.JWTClaims)
+	jti := claims.ID
+	expiresAt := claims.ExpiresAt
+	if err := a.service.Logout(ctx, jti, expiresAt.Time); err != nil {
+		log.Println("Error: ", err.Error())
+		ctx.JSON(500, dto.Response{
+			Success:  false,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(200, dto.Response{
+		Success:  true,
+		Message: "Successfully logged out",
 	})
 }

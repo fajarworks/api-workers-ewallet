@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rcontrisha/api-workers-ewallet/internal/controller"
+	"github.com/rcontrisha/api-workers-ewallet/internal/middleware"
 	"github.com/rcontrisha/api-workers-ewallet/internal/repository"
 	"github.com/rcontrisha/api-workers-ewallet/internal/service"
 	"github.com/rcontrisha/api-workers-ewallet/pkg"
@@ -21,4 +22,6 @@ func AuthRouter(r *gin.Engine, db *pgxpool.Pool, rdb *redis.Client, mailer *pkg.
 	authRouter.POST("register", controller.RegisterController)
 	authRouter.POST("forgot-password", controller.ForgotPassword)
 	authRouter.POST("reset-password", controller.ResetPassword)
+
+	authRouter.POST("logout", middleware.AuthMiddleware(rdb), controller.Logout)
 }

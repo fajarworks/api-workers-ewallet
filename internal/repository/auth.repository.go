@@ -123,3 +123,8 @@ func (a *AuthRepo) UpdatePassword(ctx context.Context, db DBTX, userID string, n
 
 	return nil
 }
+
+func (a *AuthRepo) BlacklistToken(ctx context.Context, jti string, ttl time.Duration) error {
+	key := os.Getenv("REDIS_USER") + ":blacklist:" + jti
+	return a.rdb.Set(ctx, key, "revoked", ttl).Err()
+}
