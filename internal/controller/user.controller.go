@@ -240,3 +240,46 @@ func (u *UserController) ChangePassword(ctx *gin.Context) {
 		Message: "change password success",
 	})
 }
+
+func (u *UserController) ChangePinUser(ctx *gin.Context) {
+	token, exist := ctx.Get("token")
+	if !exist {
+		ctx.JSON(http.StatusUnauthorized, dto.Response{
+			Success: false,
+			Message: "token doesn't exist",
+		})
+		return
+	}
+	claims, ok := token.(pkg.JWTClaims)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, dto.Response{
+			Success: false,
+			Message: "invalid token",
+		})
+		return
+	}
+	userId := claims.Id
+	var body dto.UserChangePin
+	if err := ctx.ShouldBindBodyWith(&body, binding.JSON); err != nil {
+		log.Println("[change pin] err :", err.Error())
+		ctx.JSON(http.StatusBadRequest, dto.Response{
+			Success: false,
+			Message: "invalid request",
+		})
+		return
+	}
+	if err := u.service.ChangePin(ctx.Request.Context(), userId, body); err != nil {
+		log.Println("[change pin controller] err: ", err.Error())
+		ctx.JSON(http.StatusInternalServerError, dto.Response{
+			Success: false,
+			Message: "an error server occured",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, dto.Response{
+		Success: true,
+		Message: "pin changed successfully",
+	})
+
+}

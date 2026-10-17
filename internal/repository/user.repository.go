@@ -102,3 +102,18 @@ func (u *UserRepo) GetUserPassword(ctx context.Context, userId string, db DBTX) 
 	return userPass, nil
 
 }
+
+func (u *UserRepo) ChangePinUser(ctx context.Context, userId string, db DBTX, pin string) error {
+	sql := `UPDATE account
+			SET pin = $1
+			WHERE id = $2`
+	cmdTag, err := db.Exec(ctx, sql, pin, userId)
+	if err != nil {
+		return err
+	}
+	if cmdTag.RowsAffected() == 0 {
+		return msgerror.ErrNoRows
+	}
+	return nil
+
+}
