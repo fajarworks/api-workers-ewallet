@@ -1,9 +1,9 @@
 package model
 
 type PaymentMethod struct {
-	ID                    string  `db:"id"`
-	GatewayPaymentChannel string  `db:"gateway_payment_channel"`
-	Name                  string  `db:"name"`
-	Logo                  *string `db:"logo"`
-	IsActive              bool    `db:"is_active"`
+	ID                    string  `json:"id"`
+	GatewayPaymentChannel string  `json:"gateway_payment_channel"`
+	Name                  string  `json:"name"`
+	Logo                  *string `json:"logo"`
+	IsActive              bool    `json:"is_active"`
 }

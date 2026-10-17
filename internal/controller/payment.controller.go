@@ -83,3 +83,19 @@ func (p *PaymentController) DokuNotification(c *gin.Context) {
 		Data:    nil,
 	})
 }
+
+func (p *PaymentController) GetPaymentMethodList(ctx *gin.Context) {
+	paymentMethod, err := p.service.GetPaymentMethodList(ctx)
+	if err != nil {
+		ctx.JSON(500, dto.Response{
+			Success: false,
+			Message: "an server error occured",
+		})
+		return
+	}
+	ctx.JSON(200, dto.Response{
+		Success: true,
+		Message: "payment method list retrieved successfully",
+		Data:    paymentMethod,
+	})
+}
