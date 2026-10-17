@@ -82,3 +82,25 @@ func (p *PaymentRepo) AddWalletBalance(ctx context.Context, db DBTX, walletID st
 	}
 	return nil
 }
+
+func (p *PaymentRepo) GetPaymentMethodList(ctx context.Context, db DBTX) ([]model.PaymentMethod, error) {
+	query := `SELECT id, gateway_payment_channel, name, logo, is_active FROM payment_method`
+	rows, err := db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	var listPayments []model.PaymentMethod
+	for rows.Next() {
+		var payment model.PaymentMethod
+		if err := rows.Scan(&payment.ID, &payment.GatewayPaymentChannel, &payment.Name, &payment.Logo, &payment.IsActive); err != nil {
+			return nil, err
+		}
+		listPayments = append(listPayments, payment)
+
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return listPayments, nil
+}

@@ -24,4 +24,5 @@ func PaymentRouter(r *gin.Engine, db *pgxpool.Pool, rdb *redis.Client, dokuClien
 
 	// DOKU webhook (notify)
 	paymentRouter.POST("doku/notify", controller.DokuNotification)
+	paymentRouter.GET("method", controller.GetPaymentMethodList)
 }

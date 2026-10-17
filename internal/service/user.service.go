@@ -125,3 +125,35 @@ func (s *UserService) SetPINService(ctx context.Context, userID string, payload 
 
 	return nil
 }
+
+func (s *UserService) UserDashboardSummary(ctx context.Context, userId string) (dto.DashboardSummaryResponse, error) {
+	data, err := s.repo.UserSummaryDashboard(ctx, userId, s.db)
+	if err != nil {
+		return dto.DashboardSummaryResponse{}, nil
+	}
+
+	payload := dto.DashboardSummaryResponse{
+		Balance: data.Balance,
+		Income:  data.Income,
+		Expense: data.Expense,
+	}
+	return payload, nil
+
+}
+
+func (s *UserService) UserDashboardHistoryTransaction(ctx context.Context, userId string) ([]dto.HistoryTransactionResponse, error) {
+	data, err := s.repo.UserHistoryTransaction(ctx, userId, s.db)
+	if err != nil {
+		return nil, err
+	}
+	histories := make([]dto.HistoryTransactionResponse, 0)
+	for _, v := range data {
+		histories = append(histories, dto.HistoryTransactionResponse{
+			Name:   v.Name,
+			Avatar: v.Avatar,
+			Type:   v.Type,
+			Amount: v.Amount,
+		})
+	}
+	return histories, nil
+}

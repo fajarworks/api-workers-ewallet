@@ -132,3 +132,68 @@ func (u *UserRepo) SetUserPIN(ctx context.Context, db DBTX, userID string, hashe
 	}
 	return nil
 }
+
+func (u *UserRepo) UserSummaryDashboard(ctx context.Context, userId string, db DBTX) (model.DashboardSummary, error) {
+	query := `SELECT 
+				w.balance, 
+				COALESCE(SUM(t.total) FILTER(WHERE t.sender_wallet_id = w.id),0) AS expense, 
+				COALESCE(SUM(t.amount) FILTER (WHERE t.receiver_wallet_id = w.id),0) AS income
+				FROM wallet w
+				LEFT JOIN transaction t ON (t.sender_wallet_id = w.id OR t.receiver_wallet_id = w.id) AND t.status = 'success'
+				WHERE w.id = $1
+				GROUP BY w.id, w.balance`
+
+	var data model.DashboardSummary
+	if err := db.QueryRow(ctx, query, userId).Scan(&data.Balance, &data.Expense, &data.Income); err != nil {
+		return model.DashboardSummary{}, err
+	}
+	return data, nil
+}
+
+func (u *UserRepo) UserHistoryTransaction(ctx context.Context, userId string, db DBTX) ([]model.DashboardHistoryTransaction, error) {
+	query := `SELECT
+  CASE WHEN t.type = 'topup' THEN pm.name ELSE a.fullname END AS name,
+  CASE WHEN t.type = 'topup' THEN pm.logo ELSE a.avatar   END AS avatar,
+  CASE
+    WHEN t.type = 'topup'        THEN 'topup'
+    WHEN t.sender_wallet_id = $1 THEN 'transfer_out'
+    ELSE                              'transfer_in'
+  END AS type,
+  CASE
+    WHEN t.type <> 'topup' AND t.sender_wallet_id = $1 THEN -t.total
+    ELSE t.amount
+  END AS amount
+FROM transaction t
+LEFT JOIN account a
+  ON a.id = CASE
+              WHEN t.sender_wallet_id = $1 THEN t.receiver_wallet_id
+              ELSE t.sender_wallet_id
+            END
+LEFT JOIN payment_method pm ON pm.id = t.payment_method_id
+WHERE (
+        (t.sender_wallet_id   = $1 AND t.deleted_by_sender   = false)
+     OR (t.receiver_wallet_id = $1 AND t.deleted_by_receiver = false)
+      )
+ORDER BY t.created_at DESC
+LIMIT 10`
+
+	row, err := db.Query(ctx, query, userId)
+	if err != nil {
+		return nil, err
+	}
+	defer row.Close()
+	var histories []model.DashboardHistoryTransaction
+	for row.Next() {
+		var data model.DashboardHistoryTransaction
+		if err := row.Scan(&data.Name, &data.Avatar, &data.Type, &data.Amount); err != nil {
+			return nil, err
+		}
+		histories = append(histories, data)
+
+	}
+	if err := row.Err(); err != nil {
+		return nil, err
+	}
+	return histories, nil
+
+}

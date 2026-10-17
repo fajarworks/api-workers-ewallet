@@ -145,3 +145,21 @@ func (s *PaymentService) ProcessDokuNotificationService(ctx context.Context, pay
 
 	return s.repo.UpdateTransactionStatus(ctx, s.db, trx.TrxCode, "FAILED")
 }
+
+func (s *PaymentService) GetPaymentMethodList(ctx context.Context) ([]dto.PaymentMethod, error) {
+	data, err := s.repo.GetPaymentMethodList(ctx, s.db)
+	if err != nil {
+		return nil, err
+	}
+	methodList := make([]dto.PaymentMethod, 0)
+	for _, v := range data {
+		methodList = append(methodList, dto.PaymentMethod{
+			ID:                    v.ID,
+			GatewayPaymentChannel: v.GatewayPaymentChannel,
+			Name:                  v.Name,
+			Logo:                  v.Logo,
+			IsActive:              v.IsActive,
+		})
+	}
+	return methodList, nil
+}
