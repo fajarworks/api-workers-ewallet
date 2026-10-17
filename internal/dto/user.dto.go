@@ -38,3 +38,7 @@ type UserChangePassword struct {
 type UserChangePin struct {
 	Pin string `json:"pin"`
 }
+
+type SetPinRequest struct {
+	Pin string `json:"pin" binding:"required,numeric,len=6"`
+}

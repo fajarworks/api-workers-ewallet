@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"errors"
+	"log"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rcontrisha/api-workers-ewallet/internal/dto"
@@ -101,4 +103,25 @@ func (u *UserService) ChangePin(ctx context.Context, userId string, payload dto.
 
 	return u.repo.ChangePinUser(ctx, userId, u.db, pin)
 
+}
+
+func (s *UserService) SetPINService(ctx context.Context, userID string, payload dto.SetPinRequest) error {
+	acc, err := s.repo.GetProfile(ctx, s.db, userID)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	if acc.Pin != nil && *acc.Pin != "" {
+		return errors.New("PIN has already been set. Please use Change PIN feature.")
+	}
+
+	hashConf := pkg.NewRecommendedHashConfig()
+	hashedPIN := hashConf.GenHash(payload.Pin)
+
+	if err := s.repo.SetUserPIN(ctx, s.db, userID, hashedPIN); err != nil {
+		return err
+	}
+
+	return nil
 }

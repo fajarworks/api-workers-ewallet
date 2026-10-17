@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	msgerror "github.com/rcontrisha/api-workers-ewallet/internal/error"
@@ -53,7 +54,7 @@ func (u *UserRepo) UpdateUserEmail(ctx context.Context, email, userId string, db
 
 func (u *UserRepo) GetProfile(ctx context.Context, db DBTX, userID string) (model.UserResponse, error) {
 	query := `
-		SELECT u.id, a.fullname, a.phone, a.avatar, u.email, a.created_at, a.updated_at
+		SELECT u.id, a.fullname, a.phone, a.avatar, u.email, a.pin, a.created_at, a.updated_at
 		FROM users u
 		JOIN account a ON a.id = u.id
 		WHERE u.id = $1`
@@ -64,6 +65,7 @@ func (u *UserRepo) GetProfile(ctx context.Context, db DBTX, userID string) (mode
 		&user.Phone,
 		&user.Avatar,
 		&user.Email,
+		&user.Pin,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
@@ -116,4 +118,17 @@ func (u *UserRepo) ChangePinUser(ctx context.Context, userId string, db DBTX, pi
 	}
 	return nil
 
+}
+
+func (u *UserRepo) SetUserPIN(ctx context.Context, db DBTX, userID string, hashedPIN string) error {
+	query := `UPDATE account SET pin = $1 WHERE id = $2`
+	cmd, err := db.Exec(ctx, query, hashedPIN, userID)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	if cmd.RowsAffected() == 0 {
+		return errors.New("USER_NOT_FOUND")
+	}
+	return nil
 }

@@ -283,3 +283,45 @@ func (u *UserController) ChangePinUser(ctx *gin.Context) {
 	})
 
 }
+
+func (u *UserController) SetPIN(ctx *gin.Context) {
+	token, exist := ctx.Get("token")
+	if !exist {
+		ctx.JSON(http.StatusUnauthorized, dto.Response{
+			Success: false,
+			Message: "token doesn't exist",
+		})
+		return
+	}
+	claims, ok := token.(pkg.JWTClaims)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, dto.Response{
+			Success: false,
+			Message: "invalid token",
+		})
+		return
+	}
+	userId := claims.Id
+
+	var payload dto.SetPinRequest
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, dto.Response{
+			Message: err.Error(),
+			Data:    nil,
+		})
+		return
+	}
+
+	if err := u.service.SetPINService(ctx.Request.Context(), userId, payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, dto.Response{
+			Message: err.Error(),
+			Data:    nil,
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, dto.Response{
+		Message: "PIN set successfully",
+		Data:    nil,
+	})
+}
