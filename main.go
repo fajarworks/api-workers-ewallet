@@ -66,7 +66,9 @@ func main() {
 		log.Fatalf("failed to initialize mailer: %v", err)
 	}
 
+	dokuClient := pkg.NewDokuClient()
+
 	r := gin.Default()
-	router.MainRouter(r, pool, rdb, mailClient)
+	router.MainRouter(r, pool, rdb, mailClient, dokuClient)
 	r.Run(fmt.Sprintf("%s:%s", os.Getenv("HOST"), os.Getenv("PORT")))
 }
