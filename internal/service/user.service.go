@@ -94,3 +94,11 @@ func (u *UserService) ChangePassword(ctx context.Context, userId string, payload
 
 	return u.repo.ChangePassword(ctx, userId, newPass, u.db)
 }
+
+func (u *UserService) ChangePin(ctx context.Context, userId string, payload dto.UserChangePin) error {
+	hashConf := pkg.NewRecommendedHashConfig()
+	pin := hashConf.GenHash(payload.Pin)
+
+	return u.repo.ChangePinUser(ctx, userId, u.db, pin)
+
+}
