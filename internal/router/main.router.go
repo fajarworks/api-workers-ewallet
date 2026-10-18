@@ -22,4 +22,5 @@ func MainRouter(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client, mailer 
 	UserRouter(router, db, rdb)
 	PaymentRouter(router, db, rdb, dokuClient)
 	TransferRouter(router, db, rdb)
+	TransactionHistoryRouter(router, db, rdb)
 }
