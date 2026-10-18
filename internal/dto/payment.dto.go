@@ -1,5 +1,7 @@
 package dto
 
+import "time"
+
 type CreateTopupRequest struct {
 	Amount          int     `json:"amount" binding:"required,gt=0"`
 	Tax             int     `json:"tax"`
@@ -25,4 +27,17 @@ type DokuNotificationPayload struct {
 	Transaction struct {
 		Status string `json:"status"`
 	} `json:"transaction"`
+}
+
+type TopupSummaryResponse struct {
+	TrxCode          string    `json:"trx_code"`
+	Status           string    `json:"status"` // PENDING | SUCCESS | FAILED
+	Amount           int       `json:"amount"`
+	Tax              int       `json:"tax"`
+	Total            int       `json:"total"`
+	PaymentMethod    *string   `json:"payment_method"`
+	PaymentLogo      *string   `json:"payment_logo"`
+	DestinationPhone *string   `json:"destination_phone"`
+	Note             *string   `json:"note"`
+	CreatedAt        time.Time `json:"created_at"`
 }

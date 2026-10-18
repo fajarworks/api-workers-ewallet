@@ -21,6 +21,7 @@ func PaymentRouter(r *gin.Engine, db *pgxpool.Pool, rdb *redis.Client, dokuClien
 	controller := controller.NewPaymentController(service)
 
 	paymentRouter.POST("topup", middleware.AuthMiddleware(rdb), controller.CreateTopup)
+	paymentRouter.GET("topup/:trx_code", middleware.AuthMiddleware(rdb), controller.GetTopupSummary)
 
 	// DOKU webhook (notify)
 	paymentRouter.POST("doku/notify", controller.DokuNotification)
