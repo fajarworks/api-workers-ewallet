@@ -82,6 +82,10 @@ func (s *UserService) GetProfileService(ctx context.Context, userID string) (dto
 	}, nil
 }
 
+func (u *UserService) DeleteAvatar(ctx context.Context, userID string) error {
+	return u.repo.DeleteAvatar(ctx, userID, u.db)
+}
+
 func (u *UserService) ChangePassword(ctx context.Context, userId string, payload dto.UserChangePassword) error {
 	pass, err := u.repo.GetUserPassword(ctx, userId, u.db)
 	if err != nil {
