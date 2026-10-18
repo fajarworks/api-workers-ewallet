@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"errors"
+
 	"github.com/gin-gonic/gin"
 	"github.com/rcontrisha/api-workers-ewallet/internal/dto"
 	"github.com/rcontrisha/api-workers-ewallet/internal/service"
@@ -129,5 +131,35 @@ func (p *PaymentController) GetPaymentMethodList(ctx *gin.Context) {
 		Success: true,
 		Message: "payment method list retrieved successfully",
 		Data:    paymentMethod,
+	})
+}
+
+func (p *PaymentController) GetTopupSummary(ctx *gin.Context) {
+	token, exist := ctx.Get("token")
+	if !exist {
+		ctx.JSON(401, dto.Response{Success: false, Message: "token doesn't exist"})
+		return
+	}
+	claims, ok := token.(pkg.JWTClaims)
+	if !ok {
+		ctx.JSON(401, dto.Response{Success: false, Message: "invalid token"})
+		return
+	}
+
+	trxCode := ctx.Param("trx_code")
+	resp, err := p.service.GetTopupSummaryService(ctx.Request.Context(), claims.Id, trxCode)
+	if err != nil {
+		if errors.Is(err, service.ErrTransactionNotFound) {
+			ctx.JSON(404, dto.Response{Success: false, Message: "transaction not found"})
+			return
+		}
+		ctx.JSON(500, dto.Response{Success: false, Message: "an server error occured"})
+		return
+	}
+
+	ctx.JSON(200, dto.Response{
+		Success: true,
+		Message: "topup summary retrieved successfully",
+		Data:    resp,
 	})
 }
