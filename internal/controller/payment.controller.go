@@ -17,6 +17,19 @@ func NewPaymentController(service *service.PaymentService) *PaymentController {
 	}
 }
 
+// CreateTopup godoc
+// @Summary Create top-up
+// @Description Request a top-up checkout with the DOKU payment gateway and transaction PIN.
+// @Tags Payment
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param payload body dto.CreateTopupRequest true "Request payload"
+// @Success 201 {object} dto.Response "Top-up initiated"
+// @Failure 400 {object} dto.Response "Invalid input"
+// @Failure 401 {object} dto.Response "Not authenticated"
+// @Failure 500 {object} dto.Response "Server error"
+// @Router /payment/topup [post]
 func (p *PaymentController) CreateTopup(ctx *gin.Context) {
 	token, exist := ctx.Get("token")
 	if !exist {
@@ -60,6 +73,17 @@ func (p *PaymentController) CreateTopup(ctx *gin.Context) {
 	})
 }
 
+// DokuNotification godoc
+// @Summary Receive DOKU notification
+// @Description Webhook endpoint receiving DOKU transaction status notifications.
+// @Tags Payment
+// @Accept json
+// @Produce json
+// @Param payload body dto.DokuNotificationPayload true "Request payload"
+// @Success 200 {object} dto.Response "Notification processed"
+// @Failure 400 {object} dto.Response "Invalid webhook"
+// @Failure 500 {object} dto.Response "Server error"
+// @Router /payment/doku/notify [post]
 func (p *PaymentController) DokuNotification(c *gin.Context) {
 	var payload dto.DokuNotificationPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
@@ -84,6 +108,14 @@ func (p *PaymentController) DokuNotification(c *gin.Context) {
 	})
 }
 
+// GetPaymentMethodList godoc
+// @Summary List payment methods
+// @Description Retrieve available payment methods.
+// @Tags Payment
+// @Produce json
+// @Success 200 {object} dto.Response "Payment methods retrieved"
+// @Failure 500 {object} dto.Response "Server error"
+// @Router /payment/method [get]
 func (p *PaymentController) GetPaymentMethodList(ctx *gin.Context) {
 	paymentMethod, err := p.service.GetPaymentMethodList(ctx)
 	if err != nil {
