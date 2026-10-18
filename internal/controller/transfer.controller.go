@@ -76,7 +76,7 @@ func (t *TransferController) SearchUsers(ctx *gin.Context) {
 // @Success 200 {object} dto.Response "Transfer completed"
 // @Failure 400 {object} dto.Response "Validation or transfer failed"
 // @Failure 401 {object} dto.Response "Not authenticated"
-// @Failure 500 {object} dto.Response "internal server error"
+// @Failure 500 {object} dto.Response "Internal server error"
 // @Router /transfer [post]
 func (t *TransferController) TransferMoney(ctx *gin.Context) {
 	token, exist := ctx.Get("token")
