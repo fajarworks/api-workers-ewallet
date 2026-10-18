@@ -36,6 +36,16 @@ func (s *PaymentService) CreateTopupService(ctx context.Context, userID string, 
 		return dto.CreateTopupResponse{}, fmt.Errorf("user account not found: %w", err)
 	}
 
+	if account.Pin == nil || *account.Pin == "" {
+		return dto.CreateTopupResponse{}, fmt.Errorf("user has not set a PIN yet")
+	}
+
+	if err := pkg.Compare(payload.Pin, *account.Pin); err != nil {
+		log.Printf("[*account.Pin]: %s\n[payload.Pin]: %s", *account.Pin, payload.Pin)
+		log.Println(err)
+		return dto.CreateTopupResponse{}, fmt.Errorf("invalid PIN")
+	}
+
 	var paymentChannels []string
 	if payload.PaymentMethodID != nil && *payload.PaymentMethodID != "" {
 		pm, err := s.repo.GetPaymentMethodByID(ctx, s.db, *payload.PaymentMethodID)
@@ -51,9 +61,9 @@ func (s *PaymentService) CreateTopupService(ctx context.Context, userID string, 
 		Type:             "TOPUP",
 		Status:           "PENDING",
 		Amount:           payload.Amount,
-		Tax:              0,
+		Tax:              payload.Tax,
 		Discount:         0,
-		Total:            payload.Amount,
+		Total:            payload.Amount + payload.Tax,
 		SenderWalletID:   nil,
 		ReceiverWalletID: userID,
 		PaymentMethodID:  payload.PaymentMethodID,

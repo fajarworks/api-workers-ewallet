@@ -2,8 +2,10 @@ package dto
 
 type CreateTopupRequest struct {
 	Amount          int     `json:"amount" binding:"required,gt=0"`
+	Tax             int     `json:"tax"`
 	PaymentMethodID *string `json:"payment_method_id"`
 	Note            *string `json:"note"`
+	Pin             string  `json:"pin" binding:"required,len=6"`
 }
 
 type CreateTopupResponse struct {
