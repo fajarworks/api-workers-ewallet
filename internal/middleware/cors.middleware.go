@@ -14,7 +14,7 @@ func Cors(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", c.GetHeader("Origin"))
 	}
 	c.Header("Access-Control-Allow-Headers", "Content-Type, XXX-Header, Authorization")
-	c.Header("Access-Control-Allow-Methods", "GET, OPTIONS, PATCH")
+	c.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PATCH, DELETE")
 
 	// preflight cors
 	if c.Request.Method == http.MethodOptions {

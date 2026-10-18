@@ -195,6 +195,46 @@ func (u *UserController) GetProfile(ctx *gin.Context) {
 	})
 }
 
+func (u *UserController) DeleteAvatar(ctx *gin.Context) {
+	claims, exists := ctx.Get("token")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, dto.Response{
+			Success: false,
+			Message: "token doesn't exist",
+		})
+		return
+	}
+	token, ok := claims.(pkg.JWTClaims)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, dto.Response{
+			Success: false,
+			Message: "invalid token",
+		})
+		return
+	}
+
+	if err := u.service.DeleteAvatar(ctx.Request.Context(), token.Id); err != nil {
+		log.Println("[DeleteAvatar] service err:", err.Error())
+		if errors.Is(err, msgerror.ErrNoRows) {
+			ctx.JSON(http.StatusNotFound, dto.Response{
+				Success: false,
+				Message: "profile not found",
+			})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, dto.Response{
+			Success: false,
+			Message: "failed to delete avatar",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, dto.Response{
+		Success: true,
+		Message: "avatar deleted successfully",
+	})
+}
+
 func (u *UserController) ChangePassword(ctx *gin.Context) {
 	token, exist := ctx.Get("token")
 	if !exist {

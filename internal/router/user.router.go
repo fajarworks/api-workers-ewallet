@@ -18,6 +18,7 @@ func UserRouter(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 
 	userRouter.PATCH("update", middleware.AuthMiddleware(rdb), userController.UpdateUserProfile)
 	userRouter.GET("profile", middleware.AuthMiddleware(rdb), userController.GetProfile)
+	userRouter.DELETE("avatar", middleware.AuthMiddleware(rdb), userController.DeleteAvatar)
 	userRouter.PATCH("change-password", middleware.AuthMiddleware(rdb), userController.ChangePassword)
 	userRouter.PATCH("change-pin", middleware.AuthMiddleware(rdb), userController.ChangePinUser)
 	userRouter.POST("pin", middleware.AuthMiddleware(rdb), userController.SetPIN)
