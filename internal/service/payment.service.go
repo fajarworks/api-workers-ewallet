@@ -2,11 +2,13 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rcontrisha/api-workers-ewallet/internal/dto"
 	"github.com/rcontrisha/api-workers-ewallet/internal/model"
@@ -20,6 +22,8 @@ type PaymentService struct {
 	db         *pgxpool.Pool
 	dokuClient *pkg.DokuClient
 }
+
+var ErrTransactionNotFound = errors.New("transaction not found")
 
 func NewPaymentService(repo *repository.PaymentRepo, userRepo *repository.UserRepo, db *pgxpool.Pool, dokuClient *pkg.DokuClient) *PaymentService {
 	return &PaymentService{
@@ -172,4 +176,41 @@ func (s *PaymentService) GetPaymentMethodList(ctx context.Context) ([]dto.Paymen
 		})
 	}
 	return methodList, nil
+}
+
+func (s *PaymentService) GetTopupSummaryService(ctx context.Context, userID, trxCode string) (dto.TopupSummaryResponse, error) {
+	trx, err := s.repo.FindTransactionByTrxCode(ctx, s.db, trxCode)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return dto.TopupSummaryResponse{}, ErrTransactionNotFound
+		}
+		return dto.TopupSummaryResponse{}, err
+	}
+
+	if trx.Type != "TOPUP" || trx.ReceiverWalletID != userID {
+		return dto.TopupSummaryResponse{}, ErrTransactionNotFound
+	}
+
+	resp := dto.TopupSummaryResponse{
+		TrxCode:   trx.TrxCode,
+		Status:    trx.Status,
+		Amount:    trx.Amount,
+		Tax:       trx.Tax,
+		Total:     trx.Total,
+		Note:      trx.Note,
+		CreatedAt: trx.CreatedAt,
+	}
+
+	if trx.PaymentMethodID != nil && *trx.PaymentMethodID != "" {
+		if pm, err := s.repo.GetPaymentMethodByID(ctx, s.db, *trx.PaymentMethodID); err == nil {
+			resp.PaymentMethod = &pm.Name
+			resp.PaymentLogo = pm.Logo
+		}
+	}
+
+	if account, err := s.userRepo.GetProfile(ctx, s.db, userID); err == nil {
+		resp.DestinationPhone = account.Phone
+	}
+
+	return resp, nil
 }
