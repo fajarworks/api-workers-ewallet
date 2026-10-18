@@ -17,6 +17,17 @@ func NewTransferController(service *service.TransferService) *TransferController
 	}
 }
 
+// SearchUsers godoc
+// @Summary Search transfer recipients
+// @Description Search recipient accounts by q. If empty, return recent and favorite contacts.
+// @Tags Transfer
+// @Produce json
+// @Security BearerAuth
+// @Param q query string false "Search term (optional)"
+// @Success 200 {object} dto.Response "Recipients retrieved"
+// @Failure 401 {object} dto.Response "Not authenticated"
+// @Failure 500 {object} dto.Response "Server error"
+// @Router /transfer/search [get]
 func (t *TransferController) SearchUsers(ctx *gin.Context) {
 	token, exist := ctx.Get("token")
 	if !exist {
@@ -54,6 +65,19 @@ func (t *TransferController) SearchUsers(ctx *gin.Context) {
 	})
 }
 
+// TransferMoney godoc
+// @Summary Transfer money
+// @Description Transfer wallet balance to another user after validating the six-digit PIN.
+// @Tags Transfer
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param payload body dto.TransferRequest true "Request payload"
+// @Success 200 {object} dto.Response "Transfer completed"
+// @Failure 400 {object} dto.Response "Validation or transfer failed"
+// @Failure 401 {object} dto.Response "Not authenticated"
+// @Failure 500 {object} dto.Response "internal server error"
+// @Router /transfer [post]
 func (t *TransferController) TransferMoney(ctx *gin.Context) {
 	token, exist := ctx.Get("token")
 	if !exist {
