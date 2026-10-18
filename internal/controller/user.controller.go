@@ -29,6 +29,22 @@ func NewUserController(service *service.UserService) *UserController {
 	}
 }
 
+// UpdateUserProfile godoc
+// @Summary Update user profile
+// @Description Update profile information and optionally upload a profile image.
+// @Tags User
+// @Accept mpfd
+// @Produce json
+// @Security BearerAuth
+// @Param fullname formData string false "Full name"
+// @Param phone formData string false "Phone number"
+// @Param email formData string false "Email address"
+// @Param avatar_url formData file false "JPG, JPEG or PNG image, maximum 2 MiB"
+// @Success 200 {object} dto.Response "Profile updated successfully"
+// @Failure 400 {object} dto.Response "Invalid form data or avatar"
+// @Failure 401 {object} dto.Response "Unauthorized"
+// @Failure 500 {object} dto.Response "Internal server error"
+// @Router /user/update [patch]
 func (u *UserController) UpdateUserProfile(ctx *gin.Context) {
 	token, exist := ctx.Get("token")
 	if !exist {
@@ -195,6 +211,17 @@ func (u *UserController) GetProfile(ctx *gin.Context) {
 	})
 }
 
+// DeleteAvatar godoc
+// @Summary Delete avatar
+// @Description Delete the authenticated user avatar.
+// @Tags User
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} dto.Response "Avatar deleted"
+// @Failure 401 {object} dto.Response "Not authenticated"
+// @Failure 404 {object} dto.Response "Profile not found"
+// @Failure 500 {object} dto.Response "Server error"
+// @Router /user/avatar [delete]
 func (u *UserController) DeleteAvatar(ctx *gin.Context) {
 	claims, exists := ctx.Get("token")
 	if !exists {
@@ -235,6 +262,19 @@ func (u *UserController) DeleteAvatar(ctx *gin.Context) {
 	})
 }
 
+// ChangePassword godoc
+// @Summary Change password
+// @Description Change password using old and new passwords.
+// @Tags User
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param payload body dto.UserChangePassword true "Request payload"
+// @Success 200 {object} dto.Response "Password changed"
+// @Failure 400 {object} dto.Response "Invalid request or old password"
+// @Failure 401 {object} dto.Response "Not authenticated"
+// @Failure 500 {object} dto.Response "Internal server error"
+// @Router /user/change-password [patch]
 func (u *UserController) ChangePassword(ctx *gin.Context) {
 	token, exist := ctx.Get("token")
 	if !exist {
@@ -281,6 +321,19 @@ func (u *UserController) ChangePassword(ctx *gin.Context) {
 	})
 }
 
+// ChangePinUser godoc
+// @Summary Change transaction PIN
+// @Description Change the authenticated user transaction PIN.
+// @Tags User
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param payload body dto.UserChangePin true "Request payload"
+// @Success 200 {object} dto.Response "PIN changed"
+// @Failure 400 {object} dto.Response "Invalid request"
+// @Failure 401 {object} dto.Response "Not authenticated"
+// @Failure 500 {object} dto.Response "Server error"
+// @Router /user/change-pin [patch]
 func (u *UserController) ChangePinUser(ctx *gin.Context) {
 	token, exist := ctx.Get("token")
 	if !exist {
@@ -324,6 +377,19 @@ func (u *UserController) ChangePinUser(ctx *gin.Context) {
 
 }
 
+// SetPIN godoc
+// @Summary Set transaction PIN
+// @Description Set a six-digit numeric transaction PIN.
+// @Tags User
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param payload body dto.SetPinRequest true "Request payload"
+// @Success 200 {object} dto.Response "PIN set"
+// @Failure 400 {object} dto.Response "Invalid PIN or request"
+// @Failure 401 {object} dto.Response "Not authenticated"
+// @Failure 500 {object} dto.Response "Authentication middleware or internal server error"
+// @Router /user/pin [post]
 func (u *UserController) SetPIN(ctx *gin.Context) {
 	token, exist := ctx.Get("token")
 	if !exist {
@@ -366,6 +432,16 @@ func (u *UserController) SetPIN(ctx *gin.Context) {
 	})
 }
 
+// UserSummaryDashboard godoc
+// @Summary Get dashboard summary
+// @Description Retrieve wallet balance, total income and expense for the dashboard.
+// @Tags User
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} dto.Response "Summary retrieved"
+// @Failure 401 {object} dto.Response "Not authenticated"
+// @Failure 500 {object} dto.Response "Server error"
+// @Router /user/dashboard-summary [get]
 func (u *UserController) UserSummaryDashboard(ctx *gin.Context) {
 	token, exist := ctx.Get("token")
 	if !exist {
@@ -392,6 +468,16 @@ func (u *UserController) UserSummaryDashboard(ctx *gin.Context) {
 	})
 }
 
+// DashboardHistoryTransaction godoc
+// @Summary Get dashboard transaction history
+// @Description Retrieve recent transactions displayed on the dashboard.
+// @Tags User
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} dto.Response "History retrieved"
+// @Failure 401 {object} dto.Response "Not authenticated"
+// @Failure 500 {object} dto.Response "Server error"
+// @Router /user/dashboard-history [get]
 func (u *UserController) DashboardHistoryTransaction(ctx *gin.Context) {
 	token, exist := ctx.Get("token")
 	if !exist {

@@ -20,6 +20,17 @@ func NewAuthController(service *service.AuthService) *AuthController {
 	}
 }
 
+// LoginController godoc
+// @Summary Log in
+// @Description Authenticate using an email and password.
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param payload body dto.LoginRequest true "Request payload"
+// @Success 200 {object} dto.Response "Login succeeded"
+// @Failure 401 {object} dto.Response "Invalid email or password"
+// @Failure 500 {object} dto.Response "Request parsing or server error"
+// @Router /auth/login [post]
 func (a *AuthController) LoginController(ctx *gin.Context) {
 	var payload dto.LoginRequest
 	if e := ctx.ShouldBindWith(&payload, binding.JSON); e != nil {
@@ -52,6 +63,17 @@ func (a *AuthController) LoginController(ctx *gin.Context) {
 	})
 }
 
+// RegisterController godoc
+// @Summary Register an account
+// @Description Create a user, account and wallet with email and password.
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param payload body dto.LoginRequest true "Request payload"
+// @Success 201 {object} dto.Response "Account created"
+// @Failure 401 {object} dto.Response "Registration rejected"
+// @Failure 500 {object} dto.Response "Request parsing or server error"
+// @Router /auth/register [post]
 func (a *AuthController) RegisterController(ctx *gin.Context) {
 	var payload dto.LoginRequest
 
@@ -81,6 +103,17 @@ func (a *AuthController) RegisterController(ctx *gin.Context) {
 	})
 }
 
+// ForgotPassword godoc
+// @Summary Request password reset
+// @Description Send password reset instructions to a registered email.
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param payload body dto.ForgotPasswordRequest true "Request payload"
+// @Success 200 {object} dto.Response "Instructions sent"
+// @Failure 400 {object} dto.Response "Invalid email"
+// @Failure 500 {object} dto.Response "Server error"
+// @Router /auth/forgot-password [post]
 func (a *AuthController) ForgotPassword(c *gin.Context) {
 	var payload dto.ForgotPasswordRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
@@ -106,6 +139,16 @@ func (a *AuthController) ForgotPassword(c *gin.Context) {
 	})
 }
 
+// ResetPassword godoc
+// @Summary Reset password
+// @Description Reset password using a reset token and a new password.
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param payload body dto.ResetPasswordRequest true "Request payload"
+// @Success 200 {object} dto.Response "Password reset"
+// @Failure 400 {object} dto.Response "Invalid or expired reset request"
+// @Router /auth/reset-password [post]
 func (a *AuthController) ResetPassword(c *gin.Context) {
 	var payload dto.ResetPasswordRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
@@ -130,11 +173,22 @@ func (a *AuthController) ResetPassword(c *gin.Context) {
 	})
 }
 
+// Logout godoc
+// @Summary Log out
+// @Description Revoke the authenticated access token using Redis.
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} dto.Response "Logged out"
+// @Failure 401 {object} dto.Response "Not authenticated"
+// @Failure 500 {object} dto.Response "Server error"
+// @Router /auth/logout [post]
 func (a *AuthController) Logout(ctx *gin.Context) {
 	token, exist := ctx.Get("token")
 	if !exist {
 		ctx.JSON(401, dto.Response{
-			Success:  false,
+			Success: false,
 			Message: "Token Data Not Found in Context.",
 		})
 	}
@@ -145,14 +199,14 @@ func (a *AuthController) Logout(ctx *gin.Context) {
 	if err := a.service.Logout(ctx, jti, expiresAt.Time); err != nil {
 		log.Println("Error: ", err.Error())
 		ctx.JSON(500, dto.Response{
-			Success:  false,
+			Success: false,
 			Message: err.Error(),
 		})
 		return
 	}
 
 	ctx.JSON(200, dto.Response{
-		Success:  true,
+		Success: true,
 		Message: "Successfully logged out",
 	})
 }
