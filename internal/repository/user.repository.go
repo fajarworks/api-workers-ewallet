@@ -75,6 +75,18 @@ func (u *UserRepo) GetProfile(ctx context.Context, db DBTX, userID string) (mode
 	return user, nil
 }
 
+func (u *UserRepo) DeleteAvatar(ctx context.Context, userID string, db DBTX) error {
+	query := `UPDATE account SET avatar = NULL, updated_at = now() WHERE id = $1`
+	result, err := db.Exec(ctx, query, userID)
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() == 0 {
+		return msgerror.ErrNoRows
+	}
+	return nil
+}
+
 func (u *UserRepo) ChangePassword(ctx context.Context, userId string, password string, db DBTX) error {
 	sql := `
         UPDATE users
