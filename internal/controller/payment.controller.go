@@ -134,6 +134,18 @@ func (p *PaymentController) GetPaymentMethodList(ctx *gin.Context) {
 	})
 }
 
+// GetTopupSummary godoc
+// @Summary Get top-up transaction summary
+// @Description Retrieve the top-up transaction summary by transaction code for the authenticated user.
+// @Tags Payment
+// @Produce json
+// @Security BearerAuth
+// @Param trx_code path string true "Top-up transaction code"
+// @Success 200 {object} dto.Response "Top-up summary retrieved successfully"
+// @Failure 401 {object} dto.Response "Unauthorized or invalid token"
+// @Failure 404 {object} dto.Response "Transaction not found"
+// @Failure 500 {object} dto.Response "Internal server error"
+// @Router /payment/topup/{trx_code} [get]
 func (p *PaymentController) GetTopupSummary(ctx *gin.Context) {
 	token, exist := ctx.Get("token")
 	if !exist {

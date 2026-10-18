@@ -356,6 +356,58 @@
                 }
             }
         },
+        "/payment/topup/{trx_code}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve the top-up transaction summary by transaction code for the authenticated user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Get top-up transaction summary",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Top-up transaction code",
+                        "name": "trx_code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Top-up summary retrieved successfully",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Transaction not found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/transfer": {
             "post": {
                 "security": [
@@ -405,7 +457,7 @@
                         }
                     },
                     "500": {
-                        "description": "internal server error",
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/dto.Response"
                         }
